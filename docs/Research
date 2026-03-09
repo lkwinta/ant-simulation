@@ -1,0 +1,22 @@
+# Pomysł
+- Symulacja ruchu mrówek
+- Każda mrówka porusza się zgodnie z kierunkiem silniejszego zapachu feromonu
+- Mrówka może odkładać feromon 
+- Ślad feromonu znika z czasem, może też ulegać lekkiej dyfuzji
+
+# Walidacja 
+- Aby zwalidować możemy załważyć wzorce takie jak występujące w prawdziwym świecie
+- Mrówki powinny znajdować najkrótszą ścieżkę do pokarmu 
+- Powinny tworzyć się dwukierunkowe szlaki
+
+
+# Istniejące narzędzia 
+- Net Logo - https://ccl.netlogo.org/netlogo/models/Ants
+- GAMA - https://gama-platform.org/wiki/AntsForaging
+- MESA - python
+- MASON - java
+- Agents.jl - julia
+
+# Artykuły
+- https://link.springer.com/article/10.1007/s00285-024-02136-2
+- https://sci-hub.pl/10.1007/BF01417909
