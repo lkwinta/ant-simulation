@@ -42,7 +42,7 @@ gdzie:
 W fazier RETURN mrówka zostawia feromon na odwiedzanych polach:
 
 $$
-F(\mathbf{x}, t) \leftarrow F(\mathbf{x}, t) + q
+F(\mathbf{x}, t) = F(\mathbf{x}, t) + q
 $$
 
 gdzie:
@@ -53,16 +53,19 @@ gdzie:
 ### Dyfuzja i parowanie feromonu
 W każdym kroku symulacji feromon "paruje" i ulega dyfuzji:
 
-**Parowanie:**
+#### Parowanie:
+
 $$
 F(\mathbf{x}, t+1) = (1-\rho)F(\mathbf{x}, t)
 $$
+
 gdzie:
 * $\rho \in (0,1)$ - tempo parowania
 
-**Dyfuzja:**
+#### Dyfuzja:
+
 $$
-F(\mathbf{x}, t+1) \leftarrow (1-d)F(\mathbf{x}, t+1) + \frac{d}{|\mathcal{M}|}\sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} P(\mathbf{y}, t+1)
+F(\mathbf{x}, t+1) = (1-d)F(\mathbf{x}, t+1) + \frac{d}{|\mathcal{M}|}\sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} P(\mathbf{y}, t+1)
 $$
 
 gdzie:
