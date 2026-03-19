@@ -82,3 +82,4 @@ gdzie:
 # Artykuły
 - https://link.springer.com/article/10.1007/s00285-024-02136-2
 - https://sci-hub.pl/10.1007/BF01417909
+- https://journals.plos.org/ploscompbiol/article?id=10.1371%2Fjournal.pcbi.1002592
