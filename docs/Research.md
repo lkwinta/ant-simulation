@@ -4,27 +4,14 @@
 - Mrówka może odkładać feromon 
 - Ślad feromonu znika z czasem, może też ulegać lekkiej dyfuzji
 
-# Walidacja 
-Walidację algorytmu można przeprowadzić poprzez zaobserwowanie zachowań mrówek które powinny być takie jak w prawdziwym świecie.
-
-### Samorzutne tworzenie się szlaków
-Na początku mrówki będą błądzić prawie losowe, jednak gdy znajdą one jedzenie, wracają do gniazda zostawiając ślad feromonowy. Inne mrówki zaczynają podążać za feromonem do jedzenia, samemu też wzmacniając ślad, co zwabi kolejne mrówki. Stworzą się klasyczne autostrady mrówek które najczęściej obserwujemy w rzeczywistości.
-
-### Wzmocnienie lepszej trasy
-Zwykle istnieje wiele dróg do jedzenia, lecz zwykle mrówki wybiorą tą krótszą, powinno stać się to w naturalny sposób - ślad feromonowy na krótszej trasie będzie silniejszy i mrówki będą częściej nią wracać.
-
-### Zanik szlaku po wyczerpaniu jedzenia
-Gdy jedzenie się wyczerpie, mrówki przestaną zostawiać feromon i szlak powinien wygasnąć i mrówki powinny się rozproszyć.
-
-### Eksploracja vs Eksploatacja
-Manipulując parametrami zachowania mrówki, powinniśmy być w stanie wytworzyć dwa skrajne systemy - mrówki poruszają się chaotycznie, dużo eksplorują - bardzo zamknięty system, mrówki eksploatują pojedyńcze źródło jedzenia. Pośrednie parametry powinny dać stabilny system zbliżony do rzeczywistości.
-
 # Opis agenta
-W ruchu mrówki wyróżniamy fazę SEARCH - mrówka wyszła z gniazda i fazę RETURN, mrówka wraca z jedzeniem do gniazda. W fazie SEARCH mrówka zostawia feromon mówiący mrówką o drodze powrotnej do gniazda - "home feromone", a w fazie RETURN feromon prowadzący inne mrówki do jedzenia "food feromone". Analogicznie w fazie SEARCH podążają za "food feromone", a wracając za "home feromone".
+Model który chciałbym zaimplementować opisuje artykuł [[2]](#2). Przestrzenią dla mrówek jest zwykła siatka $M \times N$, a mrówki reprezentowane są jako punkty. Wiele mrówek może znajdować się w tym samym miejscu na raz. Mrówki mogą być w dwóch stanach, poszukującym jedzenia *SEARCH* i powrotu do gniazda *RETURN*. Mrówka w fazie *SEARCH*, porusza się stochastycznie z prawdopodobieństwem określonym przez feromon. Mrówka w fazie *RETURN* wraca do gniazda niosąc jedzenie zostawiając feromonowy ślad. Zakładamy, że mrówki znają lokalizację gniazda i wracają prosto do niego używając heurystyki kierunku - w artykule zacytowano badania które pokazują, że mimo iż mrówki zostawiają także w fazie *SEARCH* feromon pomagający im wrócić do gniazda, to istnieje też dodatkowy **silniejszy** czynnik pozwalający mrówką na nawigację powrotną, gdyż nawet dołożenie sztucznych przeszkód spowoduje wybranie optymalnej trasy przez mrówki.
 
 ### Ruch agenta
 Mrówka porusza się z prawdopodobieństwem zależnym od feromonu:
 
+# TODO:
+<a id="ruch"></a>
 $$
 P(i) = \frac{w_i (\varepsilon + F_i)^\alpha}{\sum_{j \in \mathcal{N}} w_j(\varepsilon + F_j)^\alpha}
 $$
@@ -32,26 +19,27 @@ $$
 gdzie:
 
 * $P(i)$ - prawdopodobienstwo ruchu w kierunku i
-* $F_i$ - feromon w kierunku $i$, odpowiedni dla fazy "food" lub "home" feromoe
+* $F_i$ - feromon w kierunku $i$
 * $\alpha \ge 0$ - czułość na feromon,
 * $\varepsilon > 0$ - mała stała, żeby mrówka umiała eksplorować bez feromonu
 * $\mathcal{N}$ - zbiór rozważanych kierunków
 * $w_i$ - waga ruchu w danym kierunku, żeby mrówka miała "inercję"
 
-### Depozycja feromonu
-W fazier RETURN mrówka zostawia feromon na odwiedzanych polach:
+### Feromon
+W każdym kroku symulacji mrówki zostawiają feromon który "paruje" i ulega dyfuzji. W [[Równanie 1 w 2]](#2) zastosowano równanie różniczkowe opisujące dyfuzję i parowanie feromonu, ja zdecydowałem uprościć to i zastosować zdyskretyzowańą wersję. Depozycja feromonu przez mrówki w fazie *RETURN* jest wykładniczo malejąca z odległością od jedzenia.
+
+#### Depozycja
 
 $$
-F(\mathbf{x}, t) = F(\mathbf{x}, t) + q
+F(\mathbf{x}, t) = F(\mathbf{x}, t) + A\exp^{-\left(\frac{||\mathbf{x}-\mathbf{x_f}||}{\sigma }\right)^2}
 $$
 
 gdzie:
 * $\mathbf{x}$ - aktualne położenie mrówki
+* $\mathbf{x_f}$ - położnie jedzenia z którego wraca mrówka
 * $t$ - krok czasowy
-* $q$ - ilość feromonu na krok - można uzależnić od dystansu od jedzenia
-
-### Dyfuzja i parowanie feromonu
-W każdym kroku symulacji feromon "paruje" i ulega dyfuzji:
+* $A > 0$
+* $\sigma > 0$
 
 #### Parowanie:
 
@@ -65,12 +53,27 @@ gdzie:
 #### Dyfuzja:
 
 $$
-F(\mathbf{x}, t+1) = (1-d)F(\mathbf{x}, t+1) + \frac{d}{|\mathcal{M}|}\sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} P(\mathbf{y}, t+1)
+F(\mathbf{x}, t+1) = (1-d)F(\mathbf{x}, t+1) + \frac{d}{|\mathcal{M}|}\sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} F(\mathbf{y}, t+1)
 $$
 
 gdzie:
-* $d$ 0 - współczynnik dyfuzji,
+* $d$ - współczynnik dyfuzji,
 * $\mathcal{M}(\mathbf{x})$ - sąsiedztwo punktu $\mathbf{x}$
+
+# Walidacja 
+Walidację algorytmu można przeprowadzić poprzez zaobserwowanie zachowań mrówek które powinny być takie jak w prawdziwym świecie.
+
+### Kolektywny wybór trasy
+Jak pokazano na [[Fig.2 w 1]](#1) z dwóch równych tras mrówki kolektywnie wybiorą jedną. Na [[Fig.3 w 1]](#1) zaprezentowano rozkład przejść mrówek na jednej z tras w porównaniu do symulacji Monte Carlo, można spróbować porównać podobny rozkład.
+
+### Wzmocnienie lepszej trasy
+Zwykle istnieje wiele dróg do jedzenia, lecz poprzez dodatnie sprzężenie zwrotne, mrówki wybiorą krótszą trasę. Przez to, że mrówki daną trasą będą przechodzić szybciej i jest ona krótsza to ślad feromonu jest świeższy, więc więcej mrówek zaczyna nią chodzić wzmacniając ślad feromonu. Jak pokazano w [[3]](#3) 
+
+### Eksploracja przestrzeni
+Biorąc wyznaczony fragment przestrzeni eksperymentu możemy porównać rozkład ilości mrówek w czasie w wyznaczonej arenie jak i jej brzegu, rozkład rzeczywisty pokazano na [[Fig.2 w 4]](#4)
+
+### Inne
+Artykuł [[4]](#4) opisuje także więcej różnych bardziej wyrafinowanych cech mrówek, jak np. rozkład zmiany kierunku ruchu mrówek w czasie. Okazuje się np. że w rzeczywistości mrówki mogą nie zawsze wybierać między "trasą w lewo", a "trasą w prawo" z prawdopodobienstwem wprost proporcjonalnym do siły feromonu na trasach - we wzorze opisującym [ruch](#ruch-agenta) musi zachodzić $\alpha > 1$, aby tworzyły się szlaki.
 
 # Istniejące narzędzia 
 - Net Logo - https://ccl.netlogo.org/netlogo/models/Ants
@@ -79,7 +82,15 @@ gdzie:
 - MASON - java
 - Agents.jl - julia
 
-# Artykuły
-- https://link.springer.com/article/10.1007/s00285-024-02136-2
-- https://sci-hub.pl/10.1007/BF01417909
-- https://journals.plos.org/ploscompbiol/article?id=10.1371%2Fjournal.pcbi.1002592
+# Bibliografia
+<a id="1">[1]</a>
+Deneubourg, J.L., Aron, S., Goss, S. et al. The self-organizing exploratory pattern of the argentine ant. J Insect Behav 3, 159–168 (1990). https://doi.org/10.1007/BF01417909
+
+<a id="2">[2]</a> 
+Hartman, S., Ryan, S.D. & Karamched, B.R. Walk this way: modeling foraging ant dynamics in multiple food source environments. J. Math. Biol. 89, 41 (2024). https://doi.org/10.1007/s00285-024-02136-2
+
+<a id="3">[3]</a> 
+Goss, S., Aron, S., Deneubourg, J.L. et al. Self-organized shortcuts in the Argentine ant. Naturwissenschaften 76, 579–581 (1989). https://doi.org/10.1007/BF00462870
+
+<a id="4">[4]</a> 
+Perna A, Granovskiy B, Garnier S, Nicolis SC, Labédan M, et al. (2012) Individual Rules for Trail Pattern Formation in Argentine Ants (Linepithema humile). PLOS Computational Biology 8(7): e1002592. https://doi.org/10.1371/journal.pcbi.1002592
