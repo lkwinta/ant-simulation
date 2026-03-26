@@ -8,22 +8,32 @@
 Model który chciałbym zaimplementować opisuje artykuł [[2]](#2). Przestrzenią dla mrówek jest zwykła siatka $M \times N$, a mrówki reprezentowane są jako punkty. Wiele mrówek może znajdować się w tym samym miejscu na raz. Mrówki mogą być w dwóch stanach, poszukującym jedzenia *SEARCH* i powrotu do gniazda *RETURN*. Mrówka w fazie *SEARCH*, porusza się stochastycznie z prawdopodobieństwem określonym przez feromon. Mrówka w fazie *RETURN* wraca do gniazda niosąc jedzenie zostawiając feromonowy ślad. Zakładamy, że mrówki znają lokalizację gniazda i wracają prosto do niego używając heurystyki kierunku - w artykule zacytowano badania które pokazują, że mimo iż mrówki zostawiają także w fazie *SEARCH* feromon pomagający im wrócić do gniazda, to istnieje też dodatkowy **silniejszy** czynnik pozwalający mrówką na nawigację powrotną, gdyż nawet dołożenie sztucznych przeszkód spowoduje wybranie optymalnej trasy przez mrówki.
 
 ### Ruch agenta
-Mrówka porusza się z prawdopodobieństwem zależnym od feromonu:
+Mrówka porusza się z prawdopodobieństwem zależnym od gradientu feromonu jak opisano w [[2]](#2):
 
-# TODO:
-<a id="ruch"></a>
+#### Gradient feromonu:
+
+Dla każdego potencjalnego kierunku ruchu $\mathbf{x_a} \in \mathcal{M}(\mathbf{x})$ definiujemy gradientu feromonu $\Delta F_a$ w danym kierunku.
+
 $$
-P(i) = \frac{w_i (\varepsilon + F_i)^\alpha}{\sum_{j \in \mathcal{N}} w_j(\varepsilon + F_j)^\alpha}
+\Delta F_a = F(\mathbf{x}_a + \mathbf{d}_a) - F(\mathbf{x}_a)
 $$
 
-gdzie:
+#### Waga ruchu w kierunku $a$
+$$
+\mathcal {W}_a = 
+\begin{cases}  
+\varepsilon , & 
+\text {if} \quad \Delta F_a < 0\\ 
+1, & \text {if} \quad \Delta F_a = 0\\ 
+1 + \Delta F_a, & \text {if} \quad \Delta F_a > 0 
+\end{cases} 
+$$
 
-* $P(i)$ - prawdopodobienstwo ruchu w kierunku i
-* $F_i$ - feromon w kierunku $i$
-* $\alpha \ge 0$ - czułość na feromon,
-* $\varepsilon > 0$ - mała stała, żeby mrówka umiała eksplorować bez feromonu
-* $\mathcal{N}$ - zbiór rozważanych kierunków
-* $w_i$ - waga ruchu w danym kierunku, żeby mrówka miała "inercję"
+#### Prawdopodobieństwo ruchu w kierunku $a$:
+
+$$
+P(a) = \frac{\mathcal{W}_a}{\sum_{b \in \mathcal{M}(\mathbf{x})} \mathcal{W}_b}
+$$
 
 ### Feromon
 W każdym kroku symulacji mrówki zostawiają feromon który "paruje" i ulega dyfuzji. W [[Równanie 1 w 2]](#2) zastosowano równanie różniczkowe opisujące dyfuzję i parowanie feromonu, ja zdecydowałem uprościć to i zastosować zdyskretyzowańą wersję. Depozycja feromonu przez mrówki w fazie *RETURN* jest wykładniczo malejąca z odległością od jedzenia.
@@ -31,7 +41,7 @@ W każdym kroku symulacji mrówki zostawiają feromon który "paruje" i ulega dy
 #### Depozycja
 
 $$
-F(\mathbf{x}, t) = F(\mathbf{x}, t) + A\exp^{-\left(\frac{||\mathbf{x}-\mathbf{x_f}||}{\sigma }\right)^2}
+F(\mathbf{x}, t) = F(\mathbf{x}, t) + Ae^{-\left(\frac{||\mathbf{x}-\mathbf{x_f}||}{\sigma }\right)^2}
 $$
 
 gdzie:
@@ -48,6 +58,7 @@ F(\mathbf{x}, t+1) = (1-\rho)F(\mathbf{x}, t)
 $$
 
 gdzie:
+* $\mathbf{x}$ - aktualnie rozważany punkt siatki
 * $\rho \in (0,1)$ - tempo parowania
 
 #### Dyfuzja:
@@ -57,6 +68,7 @@ F(\mathbf{x}, t+1) = (1-d)F(\mathbf{x}, t+1) + \frac{d}{|\mathcal{M}|}\sum_{\mat
 $$
 
 gdzie:
+* $\mathbf{x}$ - aktualnie rozważany punkt siatki
 * $d$ - współczynnik dyfuzji,
 * $\mathcal{M}(\mathbf{x})$ - sąsiedztwo punktu $\mathbf{x}$
 
@@ -73,7 +85,20 @@ Zwykle istnieje wiele dróg do jedzenia, lecz poprzez dodatnie sprzężenie zwro
 Biorąc wyznaczony fragment przestrzeni eksperymentu możemy porównać rozkład ilości mrówek w czasie w wyznaczonej arenie jak i jej brzegu, rozkład rzeczywisty pokazano na [[Fig.2 w 4]](#4)
 
 ### Inne
-Artykuł [[4]](#4) opisuje także więcej różnych bardziej wyrafinowanych cech mrówek, jak np. rozkład zmiany kierunku ruchu mrówek w czasie. Okazuje się np. że w rzeczywistości mrówki mogą nie zawsze wybierać między "trasą w lewo", a "trasą w prawo" z prawdopodobienstwem wprost proporcjonalnym do siły feromonu na trasach - we wzorze opisującym [ruch](#ruch-agenta) musi zachodzić $\alpha > 1$, aby tworzyły się szlaki.
+Artykuł [[4]](#4) opisuje także więcej różnych bardziej wyrafinowanych cech mrówek, jak np. rozkład zmiany kierunku ruchu mrówek w czasie. 
+Ciekawym testem może być sprawdzenie czy zachodzi taka korelacja lub zmiana modelu ruchu na opisany w [[4]](#4) i [[1]](#1) i dany równaniem:
+
+$$
+P(i) = \frac{(\varepsilon + F_i)^\alpha}{\sum_{j \in \mathcal{N}} (\varepsilon + F_j)^\alpha}
+$$
+
+gdzie:
+
+* $P(i)$ - prawdopodobienstwo ruchu w kierunku i
+* $F_i$ - feromon w kierunku $i$
+* $\alpha \ge 0$ - czułość na feromon,
+* $\varepsilon > 0$ - mała stała, żeby mrówka umiała eksplorować bez feromonu
+* $\mathcal{N}$ - zbiór rozważanych kierunków
 
 # Istniejące narzędzia 
 - Net Logo - https://ccl.netlogo.org/netlogo/models/Ants
