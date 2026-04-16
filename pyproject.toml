@@ -1,0 +1,27 @@
+[project]
+name = "ant-simulation"
+version = "1.0.0"
+description = ""
+authors = [{name = "Łukasz Kwinta (lkwinta)", email = "lukaszmind@gmail.com"}]
+readme = "README.md"
+
+requires-python = "==3.14.*"
+
+dependencies = [
+    "matplotlib",
+    "numpy",
+    "mesa[rec]==3.5.1",
+    "streamlit",
+    "altair"
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "ruff"
+]
+
+[tool.ruff.lint]
+ignore = [
+    "E731",  # lambda expressions
+]
