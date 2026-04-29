@@ -28,6 +28,7 @@ def run(steps: int = 3000, heat_every: int = 10):
         sigma=0.1,
         evaporation_rate=0.001,
         diffusion_rate=0.1,
+        r=2.0,
     )
     model = AntsModel(scenario=scenario, ant_class=FeromoneAntAgent)
     heat = np.zeros((scenario.width, scenario.height), dtype=np.int64)

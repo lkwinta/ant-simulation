@@ -24,6 +24,7 @@ class AntsScenario(Scenario):
     epsilon: float = 0.01
     evaporation_rate: float = 0.01
     diffusion_rate: float = 0.1
+    r = 1.4
 
 
 class AntsModel(Model):
@@ -53,7 +54,7 @@ class AntsModel(Model):
         self.wall_layer = PropertyLayer(
             "wall", (scenario.width, scenario.height), default_value=False
         )
-        mask = build_double_diamond_mask(scenario.width, scenario.height)
+        mask = build_double_diamond_mask(scenario.width, scenario.height, r=scenario.r)
         self.wall_layer.data = mask["wall_mask"].astype(bool)
         self.detector_1_short = mask["params"]["shortest_branch_mid_1"]
         self.detector_2_short = mask["params"]["shortest_branch_mid_2"]
