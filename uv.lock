@@ -33,6 +33,7 @@ dependencies = [
     { name = "mesa", extra = ["rec"] },
     { name = "numpy" },
     { name = "streamlit" },
+    { name = "tqdm" },
 ]
 
 [package.dev-dependencies]
@@ -48,6 +49,7 @@ requires-dist = [
     { name = "mesa", extras = ["rec"], specifier = "==3.5.1" },
     { name = "numpy" },
     { name = "streamlit" },
+    { name = "tqdm" },
 ]
 
 [package.metadata.requires-dev]

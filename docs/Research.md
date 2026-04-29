@@ -72,6 +72,19 @@ gdzie:
 * $d$ - współczynnik dyfuzji,
 * $\mathcal{M}(\mathbf{x})$ - sąsiedztwo punktu $\mathbf{x}$
 
+Podczas implementacji wyszło, że mój wzór jest słaby i powoduje wyparowanie feromonu poprzez utratę go na krawędziach, więc zdecydowałem się 
+zaimplementować metodę opartą o laplasjan.
+
+$$
+F(\mathbf{x}, t+1) = F(\mathbf{x}, t) + \lambda \left( \sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} F(\mathbf{y}, t) - k(x)F(\mathbf{x}, t)\right)
+$$
+
+gdzie:
+* $\mathbf{x}$ - aktualnie rozważany punkt siatki
+* $\lambda$ - współczynnik dyfuzji,
+* $k(x)$ - liczba sąsiadów punktu $\mathbf{x}$ które nie są przeszkodami
+* $\mathcal{M}(\mathbf{x})$ - sąsiedztwo punktu $\mathbf{x}$ z wyłączeniem przeszkód
+
 # Walidacja 
 Walidację algorytmu można przeprowadzić poprzez zaobserwowanie zachowań mrówek które powinny być takie jak w prawdziwym świecie.
 
