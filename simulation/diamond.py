@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
+
 def get_diamond_mask(W: int, H: int):
     cx, cy = W // 2, H // 2
     s = min(W, H)
@@ -13,10 +14,10 @@ def get_diamond_mask(W: int, H: int):
     # SIZE-DEPENDENT PARAMETERS
     # -----------------------------
     room_margin = max(2, int(0.05 * s))
-    room_w      = clamp(int(0.20 * W), 10, W // 3)
-    room_h      = clamp(int(0.55 * H), 12, H - 2*room_margin)
+    room_w = clamp(int(0.20 * W), 10, W // 3)
+    room_h = clamp(int(0.55 * H), 12, H - 2 * room_margin)
 
-    diamond_a   = clamp(int(0.20 * s), 8, s // 2 - 2)  # diamond "radius"
+    diamond_a = clamp(int(0.20 * s), 8, s // 2 - 2)  # diamond "radius"
     diamond_corridor_half = clamp(int(0.04 * s), 2, diamond_a // 3)
 
     # tunnel thickness: keep consistent with diamond corridor thickness
@@ -45,16 +46,14 @@ def get_diamond_mask(W: int, H: int):
     # -----------------------------
     # ROOMS (free rectangles)
     # -----------------------------
-    left_x0  = room_margin
-    left_x1  = room_margin + room_w
+    left_x0 = room_margin
+    left_x1 = room_margin + room_w
     right_x1 = W - room_margin
     right_x0 = right_x1 - room_w
 
-    left_room_center_x = (left_x0 + left_x1) // 2
-    left_room_center_y = cy
+    (left_x0 + left_x1) // 2
 
-    right_room_center_x = (right_x0 + right_x1) // 2
-    right_room_center_y = cy
+    (right_x0 + right_x1) // 2
 
     room_y0 = cy - room_h // 2
     room_y1 = room_y0 + room_h
@@ -68,17 +67,19 @@ def get_diamond_mask(W: int, H: int):
     # where does the diamond touch the horizontal axis?
 
     # where does the diamond touch the horizontal axis?
-    diamond_left_tip  = cx - diamond_a
+    diamond_left_tip = cx - diamond_a
     diamond_right_tip = cx + diamond_a
 
     # "ports" where the tunnel should meet the diamond for given tunnel thickness
     # shift inward by tunnel_half to avoid missing the diamond at y = cy +/- tunnel_half
-    left_port_x  = diamond_left_tip  + tunnel_half
+    left_port_x = diamond_left_tip + tunnel_half
     right_port_x = diamond_right_tip - tunnel_half
 
     # left tunnel: from left room right edge towards diamond port
     left_tunnel_x0 = left_x1
-    left_tunnel_x1 = min(left_port_x + 1, left_tunnel_x0 + tunnel_len)  # +1 because slice end is exclusive
+    left_tunnel_x1 = min(
+        left_port_x + 1, left_tunnel_x0 + tunnel_len
+    )  # +1 because slice end is exclusive
 
     # right tunnel: from diamond port towards right room left edge
     right_tunnel_x1 = right_x0
@@ -95,7 +96,7 @@ def get_diamond_mask(W: int, H: int):
         "params": {
             "left_room": (left_x0, room_y0, left_x1, room_y1),
             "right_room": (right_x0, room_y0, right_x1, room_y1),
-        }
+        },
     }
 
 
@@ -105,14 +106,20 @@ if __name__ == "__main__":
     mask = get_diamond_mask(W, H)
 
     wall_mask = mask["wall_mask"]
-    left_room_center = ((mask["params"]["left_room"][0] + mask["params"]["left_room"][2]) // 2,
-                        (mask["params"]["left_room"][1] + mask["params"]["left_room"][3]) // 2)
-    
-    right_room_center = ((mask["params"]["right_room"][0] + mask["params"]["right_room"][2]) // 2,
-                         (mask["params"]["right_room"][1] + mask["params"]["right_room"][3]) // 2)
+    left_room_center = (
+        (mask["params"]["left_room"][0] + mask["params"]["left_room"][2]) // 2,
+        (mask["params"]["left_room"][1] + mask["params"]["left_room"][3]) // 2,
+    )
+
+    right_room_center = (
+        (mask["params"]["right_room"][0] + mask["params"]["right_room"][2]) // 2,
+        (mask["params"]["right_room"][1] + mask["params"]["right_room"][3]) // 2,
+    )
 
     plt.figure(figsize=(12, 8))
-    plt.imshow(wall_mask.T, cmap="gray", origin="lower")  # transpose for nicer x/y orientation
+    plt.imshow(
+        wall_mask.T, cmap="gray", origin="lower"
+    )  # transpose for nicer x/y orientation
     plt.scatter(*left_room_center, color="red", label="Left Room Center")
     plt.scatter(*right_room_center, color="blue", label="Right Room Center")
     plt.legend()

@@ -2,6 +2,7 @@ import numpy as np
 
 from mesa.discrete_space import Cell, CellAgent
 
+
 class FoodSourceAgent(CellAgent):
     def __init__(self, model, cell: Cell, food_amount: int):
         super().__init__(model)
@@ -9,11 +10,13 @@ class FoodSourceAgent(CellAgent):
         self.pos = cell.coordinate
         self.food_amount = food_amount
 
+
 class NestAgent(CellAgent):
     def __init__(self, model, cell: Cell):
         super().__init__(model)
         self.cell = cell
         self.pos = cell.coordinate
+
 
 class AntAgent(CellAgent):
     def __init__(self, model, cell: Cell, nest: NestAgent):
@@ -27,6 +30,7 @@ class AntAgent(CellAgent):
 
     def deposit_feromone(self):
         pass
+
 
 class RandomAntAgent(AntAgent):
     def __init__(self, model, cell: Cell, nest: NestAgent):
@@ -46,7 +50,7 @@ class RandomAntAgent(AntAgent):
     def _filter_neighbors(self, neighbors):
         # Filter out neighbors that are walls (if needed)
         return [n for n in neighbors if not self._is_wall(n)]
-    
+
     def _is_wall(self, cell: Cell):
         return self.walls[cell.coordinate[0], cell.coordinate[1]]
 
@@ -64,8 +68,13 @@ class FeromoneAntAgent(AntAgent):
         possible_moves = self._filter_neighbors(self.cell.neighborhood.cells)
 
         if self.searching:
-            curr_feromone = self.feromone[self.cell.coordinate[0], self.cell.coordinate[1]]
-            gradients = [self.feromone[n.coordinate[0], n.coordinate[1]] - curr_feromone for n in possible_moves]
+            curr_feromone = self.feromone[
+                self.cell.coordinate[0], self.cell.coordinate[1]
+            ]
+            gradients = [
+                self.feromone[n.coordinate[0], n.coordinate[1]] - curr_feromone
+                for n in possible_moves
+            ]
             weights = [self._move_weight(g) for g in gradients]
 
             if sum(weights) == 0:
@@ -82,14 +91,18 @@ class FeromoneAntAgent(AntAgent):
             self.prev_cell = self.cell
             self.cell = self._return_move(possible_moves, self.nest.pos)
             self.pos = self.cell.coordinate
-        
+
             if any(isinstance(a, NestAgent) for a in self.cell.agents):
                 self.searching = True
 
     def deposit_feromone(self):
         if not self.searching:
-            food_dist = np.linalg.norm(np.array(self.food_position) - np.array(self.cell.coordinate))
-            self.feromone[self.cell.coordinate[0], self.cell.coordinate[1]] += self.model.A * np.exp(-np.pow(food_dist, 2)/self.model.sigma)
+            food_dist = np.linalg.norm(
+                np.array(self.food_position) - np.array(self.cell.coordinate)
+            )
+            self.feromone[self.cell.coordinate[0], self.cell.coordinate[1]] += (
+                self.model.A * np.exp(-np.pow(food_dist, 2) / self.model.sigma)
+            )
 
     def _move_weight(self, gradient):
         if gradient > 0:
@@ -102,10 +115,10 @@ class FeromoneAntAgent(AntAgent):
     def _filter_neighbors(self, neighbors):
         # Filter out neighbors that are walls (if needed)
         return [n for n in neighbors if not self._is_wall(n)]
-    
+
     def _is_wall(self, cell: Cell):
         return self.walls[cell.coordinate[0], cell.coordinate[1]]
-    
+
     def _return_move(self, possible_moves, nest_pos):
         nest = np.array(nest_pos, dtype=float)
         curr = np.array(self.cell.coordinate, dtype=float)
@@ -123,10 +136,16 @@ class FeromoneAntAgent(AntAgent):
 
         # fallback: jeśli nie ma żadnego kroku "w dobrą stronę", pozwól na wszystkie
         if not scored:
-            scored = [(n, np.linalg.norm(np.array(n.coordinate, dtype=float) - nest)) for n in possible_moves
-                    if self.prev_cell is None or n != self.prev_cell]
+            scored = [
+                (n, np.linalg.norm(np.array(n.coordinate, dtype=float) - nest))
+                for n in possible_moves
+                if self.prev_cell is None or n != self.prev_cell
+            ]
             if not scored:
-                scored = [(n, np.linalg.norm(np.array(n.coordinate, dtype=float) - nest)) for n in possible_moves]
+                scored = [
+                    (n, np.linalg.norm(np.array(n.coordinate, dtype=float) - nest))
+                    for n in possible_moves
+                ]
 
         scored.sort(key=lambda x: x[1])
         best = scored[: min(3, len(scored))]

@@ -1,16 +1,13 @@
-import altair as alt
-alt.data_transformers.disable_max_rows()
+from agents import AntAgent, FoodSourceAgent, NestAgent
 
-import os
-import subprocess
-import sys
+import altair as alt
 
 from model import (
     AntsScenario,
     AntsModel,
 )
 from logging import WARN
-from mesa.mesa_logging import INFO, log_to_stderr
+from mesa.mesa_logging import log_to_stderr
 from mesa.visualization import (
     SolaraViz,
     SpaceRenderer,
@@ -18,7 +15,12 @@ from mesa.visualization import (
 )
 from mesa.visualization.components import AgentPortrayalStyle, PropertyLayerStyle
 
-from agents import AntAgent, FoodSourceAgent, NestAgent
+import os
+import subprocess
+import sys
+
+alt.data_transformers.disable_max_rows()
+
 
 log_to_stderr(WARN)
 
@@ -40,12 +42,13 @@ def agent_portrayal(agent):
     else:
         tooltip = {}
         color = "gray"
-    
+
     return AgentPortrayalStyle(
         color=color,
         size=5,
         tooltip=tooltip,
     )
+
 
 def propertylayer_portrayal(layer):
     if layer.name == "wall":
@@ -64,6 +67,7 @@ def propertylayer_portrayal(layer):
             vmin=-1,
             vmax=1,
         )
+
 
 model_params = {
     "rng": {
@@ -136,7 +140,14 @@ renderer = (
 renderer.render()
 
 Feromone_plot = make_plot_component("Feromone Sum")
-ant_count_plot = make_plot_component(["Ants Count 1 Short", "Ants Count 2 Short", "Ants Count 1 Long", "Ants Count 2 Long"])
+ant_count_plot = make_plot_component(
+    [
+        "Ants Count 1 Short",
+        "Ants Count 2 Short",
+        "Ants Count 1 Long",
+        "Ants Count 2 Long",
+    ]
+)
 
 page = SolaraViz(
     model,

@@ -1,21 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
+
 def carve_disk(free, cx, cy, radius):
     W, H = free.shape
-    x0 = max(0, int(cx - radius - 1)); x1 = min(W, int(cx + radius + 2))
-    y0 = max(0, int(cy - radius - 1)); y1 = min(H, int(cy + radius + 2))
+    x0 = max(0, int(cx - radius - 1))
+    x1 = min(W, int(cx + radius + 2))
+    y0 = max(0, int(cy - radius - 1))
+    y1 = min(H, int(cy + radius + 2))
     rr = radius * radius
     for x in range(x0, x1):
         for y in range(y0, y1):
             if (x - cx) ** 2 + (y - cy) ** 2 <= rr:
                 free[x, y] = True
 
+
 def carve_segment(free, p0, p1, half_width):
-    x0, y0 = p0; x1, y1 = p1
+    x0, y0 = p0
+    x1, y1 = p1
     W, H = free.shape
 
     xmin = int(max(0, min(x0, x1) - half_width - 2))
@@ -45,23 +51,25 @@ def carve_segment(free, p0, p1, half_width):
             if dx * dx + dy * dy <= hw2:
                 free[x, y] = True
 
+
 def carve_polyline(free, pts, half_width):
     for a, b in zip(pts[:-1], pts[1:]):
         carve_segment(free, a, b, half_width)
-    for (x, y) in pts:
+    for x, y in pts:
         carve_disk(free, x, y, half_width)
+
 
 def build_double_diamond_mask(W, H, r=1.4):
     # Expect W:H approx 3:1
-    cx, cy = W // 2, H // 2
-    s = min(W, H)
+    _cx, cy = W // 2, H // 2
+    min(W, H)
 
     # --- thickness / sizes (proportional to H mostly, because it's "thin") ---
     corridor_half = clamp(int(0.05 * H), 2, max(2, H // 8))
 
     room_margin = max(2, int(0.04 * H))
-    room_w = clamp(int(0.12 * W), 12, W // 4)        # room width scales with W
-    room_h = clamp(int(0.70 * H), 12, H - 2*room_margin)
+    room_w = clamp(int(0.12 * W), 12, W // 4)  # room width scales with W
+    room_h = clamp(int(0.70 * H), 12, H - 2 * room_margin)
 
     # Vertical offsets: short is a "diamond-like" branch, long is detour
     short_h = clamp(int(0.22 * H), 5, H // 2 - corridor_half - 2)
@@ -76,7 +84,7 @@ def build_double_diamond_mask(W, H, r=1.4):
     # Choose ratios that behave well for 3:1
     tunnel_L = int(0.16 * usable_x)
     bridge_L = int(0.08 * usable_x)
-    module_L = (usable_x - 2*tunnel_L - bridge_L) // 2
+    module_L = (usable_x - 2 * tunnel_L - bridge_L) // 2
 
     # Safety clamps
     tunnel_L = clamp(tunnel_L, 6, usable_x // 3)
@@ -84,13 +92,13 @@ def build_double_diamond_mask(W, H, r=1.4):
     module_L = clamp(module_L, 12, usable_x)
 
     # Recompute if clamping changed things
-    total = 2*tunnel_L + 2*module_L + bridge_L
+    total = 2 * tunnel_L + 2 * module_L + bridge_L
     if total > usable_x:
         # shrink tunnels first
         overflow = total - usable_x
         shrink = min(overflow // 2 + 1, tunnel_L - 6)
         tunnel_L -= shrink
-        total = 2*tunnel_L + 2*module_L + bridge_L
+        total = 2 * tunnel_L + 2 * module_L + bridge_L
 
     # --- start with all walls ---
     free = np.zeros((W, H), dtype=bool)
@@ -151,48 +159,79 @@ def build_double_diamond_mask(W, H, r=1.4):
             "shortest_branch_mid_2": (m2_left + module_L // 2, cy - short_h),
             "longest_branch_mid_1": (m1_left + module_L // 2, cy - long_h),
             "longest_branch_mid_2": (m2_left + module_L // 2, cy + long_h),
-        }
+        },
     }
 
-def count_agents_in_area(self, center, radius_x, radius_y, agent_filter=None):
-      
-
-        cnt = 0
-        for x in range(x0, x1 + 1):
-            for y in range(y0, y1 + 1):
-                cell = self.grid[(x, y)]
-                for a in cell.agents:
-                    if agent_filter is None or agent_filter(a):
-                        cnt += 1
-        return cnt
 
 def plot_box(center, radius_x, radius_y, **kwargs):
     cx, cy = center
     x0 = cx - radius_x
-    x1 = cx + radius_x
+    cx + radius_x
     y0 = cy - radius_y
-    y1 = cy + radius_y
-    rect = plt.Rectangle((x0, y0), 2*radius_x, 2*radius_y, **kwargs)
+    cy + radius_y
+    rect = plt.Rectangle((x0, y0), 2 * radius_x, 2 * radius_y, **kwargs)
     plt.gca().add_patch(rect)
 
+
 if __name__ == "__main__":
-    W, H = 300, 200   # 3:1
+    W, H = 300, 200  # 3:1
     r = 1.4
     masks = build_double_diamond_mask(W, H, r=r)
     wall_mask = masks["wall_mask"]
 
     plt.figure(figsize=(12, 8))
     plt.imshow(wall_mask.T, cmap="gray", origin="lower")
-    plt.scatter(*zip(masks["params"]["shortest_branch_mid_1"], masks["params"]["shortest_branch_mid_2"]), color="red", label="Short branch midpoints")
-    plt.scatter(*zip(masks["params"]["longest_branch_mid_1"], masks["params"]["longest_branch_mid_2"]), color="blue", label="Long branch midpoints")
-
+    plt.scatter(
+        *zip(
+            masks["params"]["shortest_branch_mid_1"],
+            masks["params"]["shortest_branch_mid_2"],
+        ),
+        color="red",
+        label="Short branch midpoints",
+    )
+    plt.scatter(
+        *zip(
+            masks["params"]["longest_branch_mid_1"],
+            masks["params"]["longest_branch_mid_2"],
+        ),
+        color="blue",
+        label="Long branch midpoints",
+    )
 
     radius_x, radius_y = 5, 25
-    plot_box(masks["params"]["shortest_branch_mid_1"], radius_x, radius_y, edgecolor="red", facecolor="none", linestyle="--")
-    plot_box(masks["params"]["shortest_branch_mid_2"], radius_x, radius_y, edgecolor="red", facecolor="none", linestyle="--")
-    plot_box(masks["params"]["longest_branch_mid_1"], radius_x, radius_y, edgecolor="blue", facecolor="none", linestyle="--")
-    plot_box(masks["params"]["longest_branch_mid_2"], radius_x, radius_y, edgecolor="blue", facecolor="none", linestyle="--")
-    
+    plot_box(
+        masks["params"]["shortest_branch_mid_1"],
+        radius_x,
+        radius_y,
+        edgecolor="red",
+        facecolor="none",
+        linestyle="--",
+    )
+    plot_box(
+        masks["params"]["shortest_branch_mid_2"],
+        radius_x,
+        radius_y,
+        edgecolor="red",
+        facecolor="none",
+        linestyle="--",
+    )
+    plot_box(
+        masks["params"]["longest_branch_mid_1"],
+        radius_x,
+        radius_y,
+        edgecolor="blue",
+        facecolor="none",
+        linestyle="--",
+    )
+    plot_box(
+        masks["params"]["longest_branch_mid_2"],
+        radius_x,
+        radius_y,
+        edgecolor="blue",
+        facecolor="none",
+        linestyle="--",
+    )
+
     plt.title(f"Double-diamond (W={W}, H={H}, r={r})")
     plt.legend()
     plt.axis("off")

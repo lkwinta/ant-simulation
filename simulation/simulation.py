@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from model import AntsScenario, AntsModel
-from agents import FeromoneAntAgent, RandomAntAgent
+from agents import FeromoneAntAgent
+
 
 def save_heatmap(heat, path="heatmap.png", title="Ant position heatmap"):
     plt.figure(figsize=(10, 6))
@@ -40,8 +41,12 @@ def run(steps: int = 3000, heat_every: int = 10):
                 heat[x, y] += 1
 
         if (t % 10000) == 0:
-            save_heatmap(heat, path=f"heatmap_{t}.png", title=f"Ant position heatmap at step {t}")
-            heat = np.zeros((scenario.width, scenario.height), dtype=np.int64)  # reset heatmap after saving
+            save_heatmap(
+                heat, path=f"heatmap_{t}.png", title=f"Ant position heatmap at step {t}"
+            )
+            heat = np.zeros(
+                (scenario.width, scenario.height), dtype=np.int64
+            )  # reset heatmap after saving
 
     df = model.datacollector.get_model_vars_dataframe()
     df.to_csv("model_data.csv", index=False)
