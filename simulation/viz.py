@@ -1,5 +1,4 @@
 import altair as alt
-# alt.data_transformers.enable("vegafusion") 
 
 import os
 import subprocess
@@ -7,7 +6,7 @@ import sys
 
 from model import (
     AntsScenario,
-    RandomAntsModel,
+    AntsModel,
 )
 from mesa.mesa_logging import INFO, log_to_stderr
 from mesa.visualization import (
@@ -23,19 +22,9 @@ log_to_stderr(INFO)
 def agent_portrayal(agent):
     return AgentPortrayalStyle(
         color="red",
+        size=10,
         tooltip={"Agent ID": agent.unique_id},
     )  # we are using a colormap to translate wealth to color
-
-def propertylayer_portrayal(layer):
-    if layer.name == "walls":
-        return PropertyLayerStyle(
-            colormap="greys",
-            # alpha=0.9,
-            # colorbar=False,
-            # vmin=0,
-            # vmax=1,
-        )
-    return None
 
 model_params = {
     "rng": {
@@ -55,7 +44,7 @@ model_params = {
     "height": 100,
 }
 
-model = RandomAntsModel(
+model = AntsModel(
     scenario=AntsScenario(
         n=200,
         width=100,
@@ -68,7 +57,6 @@ renderer = (
     .setup_structure(  # To customize the grid appearance.
         grid_color="black", grid_dash=[6, 2], grid_opacity=0.3
     )
-    # .setup_propertylayer(propertylayer_portrayal)
     .setup_agents(agent_portrayal, cmap="viridis", vmin=0, vmax=10)
 )
 renderer.render()

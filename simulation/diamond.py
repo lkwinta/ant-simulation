@@ -50,6 +50,12 @@ def get_diamond_mask(W: int, H: int):
     right_x1 = W - room_margin
     right_x0 = right_x1 - room_w
 
+    left_room_center_x = (left_x0 + left_x1) // 2
+    left_room_center_y = cy
+
+    right_room_center_x = (right_x0 + right_x1) // 2
+    right_room_center_y = cy
+
     room_y0 = cy - room_h // 2
     room_y1 = room_y0 + room_h
 
@@ -84,16 +90,32 @@ def get_diamond_mask(W: int, H: int):
     wall_mask[left_tunnel_x0:left_tunnel_x1, tunnel_y0:tunnel_y1] = False
     wall_mask[right_tunnel_x0:right_tunnel_x1, tunnel_y0:tunnel_y1] = False
 
-    return wall_mask
+    return {
+        "wall_mask": wall_mask,
+        "params": {
+            "left_room": (left_x0, room_y0, left_x1, room_y1),
+            "right_room": (right_x0, room_y0, right_x1, room_y1),
+        }
+    }
 
 
 if __name__ == "__main__":
     W, H = 300, 200
 
-    wall_mask = get_diamond_mask(W, H)
+    mask = get_diamond_mask(W, H)
+
+    wall_mask = mask["wall_mask"]
+    left_room_center = ((mask["params"]["left_room"][0] + mask["params"]["left_room"][2]) // 2,
+                        (mask["params"]["left_room"][1] + mask["params"]["left_room"][3]) // 2)
+    
+    right_room_center = ((mask["params"]["right_room"][0] + mask["params"]["right_room"][2]) // 2,
+                         (mask["params"]["right_room"][1] + mask["params"]["right_room"][3]) // 2)
 
     plt.figure(figsize=(12, 8))
     plt.imshow(wall_mask.T, cmap="gray", origin="lower")  # transpose for nicer x/y orientation
+    plt.scatter(*left_room_center, color="red", label="Left Room Center")
+    plt.scatter(*right_room_center, color="blue", label="Right Room Center")
+    plt.legend()
     plt.title("Wall Mask")
     plt.axis("off")
     plt.show()

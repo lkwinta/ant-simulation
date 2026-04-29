@@ -12,7 +12,8 @@ dependencies = [
     "numpy",
     "mesa[rec]==3.5.1",
     "streamlit",
-    "altair"
+    "altair",
+    "tqdm"
 ]
 
 [dependency-groups]
