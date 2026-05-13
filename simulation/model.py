@@ -1,3 +1,5 @@
+from collections import deque
+
 import numpy as np
 
 from mesa import Model
@@ -24,6 +26,7 @@ class AntsScenario(Scenario):
     epsilon: float = 0.01
     evaporation_rate: float = 0.01
     diffusion_rate: float = 0.1
+    max_feromone: float = 1000.0
     r = 1.4
 
 
@@ -43,6 +46,7 @@ class AntsModel(Model):
         self.evaporation_rate = scenario.evaporation_rate
         self.diffusion_rate = scenario.diffusion_rate
         self.epsilon = scenario.epsilon
+        self.max_feromone = scenario.max_feromone
 
         self.num_agents = scenario.n
         self.ant_class = ant_class
@@ -83,6 +87,7 @@ class AntsModel(Model):
             food_amount=1000,
         )
         self.nest = NestAgent(self, self.grid[left_room_center[0], left_room_center[1]])
+        self.nest_distance = self._build_distance_field(self.nest.pos)
 
         # TODO: place on grid
 
@@ -130,6 +135,14 @@ class AntsModel(Model):
             y = int(
                 self.random.normalvariate(left_room_center[1], max_spawn_radius / 3)
             )
+
+            x = np.clip(
+                x, mask["params"]["left_room"][0], mask["params"]["left_room"][2] - 1
+            )
+            y = np.clip(
+                y, mask["params"]["left_room"][1], mask["params"]["left_room"][3] - 1
+            )
+
             ant = self.ant_class(self, self.grid[x, y], self.nest)
             self.grid.agents.add(ant)
 
@@ -148,6 +161,12 @@ class AntsModel(Model):
             self.feromone_layer.data,
             self.diffusion_rate,
             self.wall_layer.data.astype(bool),
+        )
+        np.clip(
+            self.feromone_layer.data,
+            0.0,
+            self.max_feromone,
+            out=self.feromone_layer.data,
         )
 
         self.datacollector.collect(self)  # Collect data
@@ -191,6 +210,58 @@ class AntsModel(Model):
                     if agent_filter is None or agent_filter(a):
                         cnt += 1
         return cnt
+
+    def is_passable_move(self, start, end):
+        sx, sy = start
+        ex, ey = end
+
+        if not (0 <= ex < self.grid.width and 0 <= ey < self.grid.height):
+            return False
+        if self.wall_layer.data[sx, sy] or self.wall_layer.data[ex, ey]:
+            return False
+
+        dx = ex - sx
+        dy = ey - sy
+        if abs(dx) > 1 or abs(dy) > 1 or (dx == 0 and dy == 0):
+            return False
+
+        # Block diagonal corner-cutting through walls.
+        if abs(dx) == 1 and abs(dy) == 1:
+            if self.wall_layer.data[sx + dx, sy] or self.wall_layer.data[sx, sy + dy]:
+                return False
+
+        return True
+
+    def _build_distance_field(self, start):
+        distances = np.full(self.wall_layer.data.shape, np.inf, dtype=float)
+        if self.wall_layer.data[start]:
+            raise ValueError("Nest cannot be placed inside a wall.")
+
+        queue = deque([start])
+        distances[start] = 0.0
+
+        while queue:
+            x, y = queue.popleft()
+            base_distance = distances[x, y]
+
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    if dx == 0 and dy == 0:
+                        continue
+
+                    nx = x + dx
+                    ny = y + dy
+                    neighbor = (nx, ny)
+
+                    if not self.is_passable_move((x, y), neighbor):
+                        continue
+                    if np.isfinite(distances[neighbor]):
+                        continue
+
+                    distances[neighbor] = base_distance + 1.0
+                    queue.append(neighbor)
+
+        return distances
 
     @staticmethod
     def _diffusion(F, lam, wall_mask):

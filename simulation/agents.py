@@ -1,4 +1,5 @@
 import numpy as np
+from collections import deque
 
 from mesa.discrete_space import Cell, CellAgent
 
@@ -31,11 +32,17 @@ class AntAgent(CellAgent):
     def deposit_feromone(self):
         pass
 
+    def _filter_neighbors(self, neighbors):
+        return [
+            neighbor
+            for neighbor in neighbors
+            if self.model.is_passable_move(self.cell.coordinate, neighbor.coordinate)
+        ]
+
 
 class RandomAntAgent(AntAgent):
     def __init__(self, model, cell: Cell, nest: NestAgent):
         super().__init__(model, cell, nest)
-        self.walls = self.model.wall_layer.data
         self.feromone = self.model.feromone_layer.data
         self.prev_cell = cell
 
@@ -47,35 +54,33 @@ class RandomAntAgent(AntAgent):
     def deposit_feromone(self):
         pass
 
-    def _filter_neighbors(self, neighbors):
-        # Filter out neighbors that are walls (if needed)
-        return [n for n in neighbors if not self._is_wall(n)]
-
-    def _is_wall(self, cell: Cell):
-        return self.walls[cell.coordinate[0], cell.coordinate[1]]
-
 
 class FeromoneAntAgent(AntAgent):
     def __init__(self, model, cell: Cell, nest: NestAgent):
         super().__init__(model, cell, nest)
-        self.walls = self.model.wall_layer.data
         self.feromone = self.model.feromone_layer.data
         self.epsilon = self.model.epsilon
         self.searching = True
         self.food_position = None
+        self.recent_positions = deque(maxlen=10)
 
     def step(self):
         possible_moves = self._filter_neighbors(self.cell.neighborhood.cells)
 
         if self.searching:
-            curr_feromone = self.feromone[
-                self.cell.coordinate[0], self.cell.coordinate[1]
-            ]
+            curr_f = np.log1p(
+                self.feromone[self.cell.coordinate[0], self.cell.coordinate[1]]
+            )
+
             gradients = [
-                self.feromone[n.coordinate[0], n.coordinate[1]] - curr_feromone
+                np.log1p(self.feromone[n.coordinate[0], n.coordinate[1]]) - curr_f
                 for n in possible_moves
             ]
             weights = [self._move_weight(g) for g in gradients]
+
+            for i, move in enumerate(possible_moves):
+                if move in self.recent_positions:
+                    weights[i] *= 0.1
 
             if sum(weights) == 0:
                 weights = [1] * len(possible_moves)
@@ -83,13 +88,14 @@ class FeromoneAntAgent(AntAgent):
             self.prev_cell = self.cell
             self.cell = self.random.choices(possible_moves, weights=weights, k=1)[0]
             self.pos = self.cell.coordinate
+            self.recent_positions.append(self.cell)
 
             if any(isinstance(a, FoodSourceAgent) for a in self.cell.agents):
                 self.searching = False
                 self.food_position = self.cell.coordinate
         else:
             self.prev_cell = self.cell
-            self.cell = self._return_move(possible_moves, self.nest.pos)
+            self.cell = self._return_move(possible_moves)
             self.pos = self.cell.coordinate
 
             if any(isinstance(a, NestAgent) for a in self.cell.agents):
@@ -100,9 +106,11 @@ class FeromoneAntAgent(AntAgent):
             food_dist = np.linalg.norm(
                 np.array(self.food_position) - np.array(self.cell.coordinate)
             )
-            self.feromone[self.cell.coordinate[0], self.cell.coordinate[1]] += (
-                self.model.A * np.exp(-np.pow(food_dist, 2) / self.model.sigma)
+            x, y = self.cell.coordinate
+            self.feromone[x, y] += self.model.A * np.exp(
+                -np.pow(food_dist, 2) / np.pow(self.model.sigma, 2)
             )
+            self.feromone[x, y] = min(self.feromone[x, y], self.model.max_feromone)
 
     def _move_weight(self, gradient):
         if gradient > 0:
@@ -112,40 +120,36 @@ class FeromoneAntAgent(AntAgent):
         else:
             return 1  # Neutral move if no gradient
 
-    def _filter_neighbors(self, neighbors):
-        # Filter out neighbors that are walls (if needed)
-        return [n for n in neighbors if not self._is_wall(n)]
-
-    def _is_wall(self, cell: Cell):
-        return self.walls[cell.coordinate[0], cell.coordinate[1]]
-
-    def _return_move(self, possible_moves, nest_pos):
-        nest = np.array(nest_pos, dtype=float)
-        curr = np.array(self.cell.coordinate, dtype=float)
-        curr_dist = np.linalg.norm(curr - nest)
+    def _return_move(self, possible_moves):
+        curr_dist = self.model.nest_distance[self.cell.coordinate]
 
         scored = []
         for n in possible_moves:
             if self.prev_cell is not None and n == self.prev_cell:
                 continue
-            d = np.linalg.norm(np.array(n.coordinate, dtype=float) - nest)
+            d = self.model.nest_distance[n.coordinate]
+            if not np.isfinite(d):
+                continue
 
-            # preferuj ruchy nieoddalające
-            if d <= curr_dist + 1e-9:
+            if not np.isfinite(curr_dist) or d < curr_dist:
                 scored.append((n, d))
 
-        # fallback: jeśli nie ma żadnego kroku "w dobrą stronę", pozwól na wszystkie
         if not scored:
             scored = [
-                (n, np.linalg.norm(np.array(n.coordinate, dtype=float) - nest))
+                (n, self.model.nest_distance[n.coordinate])
                 for n in possible_moves
                 if self.prev_cell is None or n != self.prev_cell
+                if np.isfinite(self.model.nest_distance[n.coordinate])
             ]
             if not scored:
                 scored = [
-                    (n, np.linalg.norm(np.array(n.coordinate, dtype=float) - nest))
+                    (n, self.model.nest_distance[n.coordinate])
                     for n in possible_moves
+                    if np.isfinite(self.model.nest_distance[n.coordinate])
                 ]
+
+        if not scored:
+            return self.prev_cell if self.prev_cell is not None else self.cell
 
         scored.sort(key=lambda x: x[1])
         best = scored[: min(3, len(scored))]
