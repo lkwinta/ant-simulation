@@ -19,6 +19,17 @@ def save_heatmap(heat, path="heatmap.png", title="Ant position heatmap"):
 
 
 def run(steps: int = 3000, heat_every: int = 10):
+    # scenario = AntsScenario(
+    #     n=100,
+    #     width=300,
+    #     height=200,
+    #     epsilon=0.5,
+    #     A=10.0,
+    #     sigma=0.1,
+    #     evaporation_rate=0.0001,
+    #     diffusion_rate=0.1,
+    #     r=1.7,
+    # )
     scenario = AntsScenario(
         n=100,
         width=300,
@@ -28,7 +39,7 @@ def run(steps: int = 3000, heat_every: int = 10):
         sigma=0.1,
         evaporation_rate=0.001,
         diffusion_rate=0.1,
-        r=2.0,
+        r=1.7,
     )
     model = AntsModel(scenario=scenario, ant_class=FeromoneAntAgent)
     heat = np.zeros((scenario.width, scenario.height), dtype=np.int64)
@@ -40,10 +51,14 @@ def run(steps: int = 3000, heat_every: int = 10):
             for a in model.agents.select(lambda a: isinstance(a, FeromoneAntAgent)):
                 x, y = a.pos
                 heat[x, y] += 1
-
         if (t % 10000) == 0:
             save_heatmap(
                 heat, path=f"heatmap_{t}.png", title=f"Ant position heatmap at step {t}"
+            )
+            save_heatmap(
+                model.grid._mesa_property_layers["feromone"].data,
+                path=f"feromone_{t}.png",
+                title=f"Feromone map at step {t}",
             )
             heat = np.zeros(
                 (scenario.width, scenario.height), dtype=np.int64

@@ -7,7 +7,7 @@
 # Opis agenta
 Model który chciałbym zaimplementować opisuje artykuł [[2]](#2). Przestrzenią dla mrówek jest zwykła siatka $M \times N$, a mrówki reprezentowane są jako punkty. Wiele mrówek może znajdować się w tym samym miejscu na raz. Mrówki mogą być w dwóch stanach, poszukującym jedzenia *SEARCH* i powrotu do gniazda *RETURN*. Mrówka w fazie *SEARCH*, porusza się stochastycznie z prawdopodobieństwem określonym przez feromon. Mrówka w fazie *RETURN* wraca do gniazda niosąc jedzenie zostawiając feromonowy ślad. Zakładamy, że mrówki znają lokalizację gniazda i wracają prosto do niego używając heurystyki kierunku - w artykule zacytowano badania które pokazują, że mimo iż mrówki zostawiają także w fazie *SEARCH* feromon pomagający im wrócić do gniazda, to istnieje też dodatkowy **silniejszy** czynnik pozwalający mrówką na nawigację powrotną, gdyż nawet dołożenie sztucznych przeszkód spowoduje wybranie optymalnej trasy przez mrówki.
 
-### Ruch agenta
+### Ruch agenta *SEARCH*
 Mrówka porusza się z prawdopodobieństwem zależnym od gradientu feromonu jak opisano w [[2]](#2):
 
 #### Gradient feromonu:
@@ -35,6 +35,42 @@ $$
 P(a) = \frac{\mathcal{W}_a}{\sum_{b \in \mathcal{M}(\mathbf{x})} \mathcal{W}_b}
 $$
 
+### Ruch agenta *RETURN*
+W fazie *RETURN* według artykułu [[2]](#2) mrówka porusza się do gniazda algorytmem Beeline, czyli wybiera kierunek który jest najbardziej zbliżony do kierunku gniazda. Zdecydowałem się opisać ten model przy pomocy wzoru:
+
+#### Dystans od gniazda:
+Podstawą wyboru kierunku jest dystans od gniazda, więc wprowadzam funkcję która dla danego punktu $\mathbf{y}$ zwraca jego odległość od gniazda:
+
+$$
+d_g(\mathbf{y}) = ||\mathbf{y} - \mathbf{x_g}||
+$$
+
+gdzie:
+* $\mathbf{y}$ - rowzważany punkt
+* $\mathbf{x_g}$ - położenie gniazda
+
+#### Wybór potencjalnych punktów ruchu:
+Jako kandydatów do ruchu wybieram tylko te punkty które są bliżej gniazda niż aktualna pozycja mrówki, o ile to możliwe, czyli:
+
+$$
+\mathcal{B}(\mathbf{x}) = {\{\mathbf{y} \in \mathcal{M}(\mathbf{x}) : d_g(\mathbf{y}) < d_g(\mathbf{x})\}}
+$$
+gdzie:
+* $\mathbf{x}$ - aktualne położenie mrówki
+* $\mathbf{x_g}$ - położenie gniazda
+* $\mathcal{M}(\mathbf{x})$ - sąsiedztwo punktu $\mathbf{x}$
+
+#### Prawdopobieństwo ruchu z $\mathbf{x}$ do $\mathbf{y}$:
+$$
+P(\mathbf{x} \to \mathbf{y}) = \frac{(d_g(\mathbf{y}) + \epsilon)^{-1}}{\sum_{\mathbf{z} \in \mathcal{B}(\mathbf{x})} (d_g(\mathbf{z}) + \epsilon)^{-1}}
+$$
+
+gdzie:
+* $\mathbf{x}$ - aktualne położenie mrówki
+* $\mathbf{y}$ - potencjalne nowe położenie mrówki
+* $\mathbf{x_g}$ - położenie gniazda
+* $\epsilon > 0$ - mała stała, żeby uniknąć dzielenia przez zero i dać możliwość eksploracji
+* $\mathcal{B}(\mathbf{x})$ - zbiór sąsiadujących punktów do których mrówka może się poruszyć z $\mathbf{x}$
 ### Feromon
 W każdym kroku symulacji mrówki zostawiają feromon który "paruje" i ulega dyfuzji. W [[Równanie 1 w 2]](#2) zastosowano równanie różniczkowe opisujące dyfuzję i parowanie feromonu, ja zdecydowałem uprościć to i zastosować zdyskretyzowańą wersję. Depozycja feromonu przez mrówki w fazie *RETURN* jest wykładniczo malejąca z odległością od jedzenia.
 
@@ -64,7 +100,7 @@ gdzie:
 #### Dyfuzja:
 
 $$
-F(\mathbf{x}, t+1) = (1-d)F(\mathbf{x}, t+1) + \frac{d}{|\mathcal{M}|}\sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} F(\mathbf{y}, t+1)
+F(\mathbf{x}, t+1) = (1-d)F(\mathbf{x}, t) + \frac{d}{|\mathcal{M}|}\sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} F(\mathbf{y}, t)
 $$
 
 gdzie:
@@ -73,7 +109,7 @@ gdzie:
 * $\mathcal{M}(\mathbf{x})$ - sąsiedztwo punktu $\mathbf{x}$
 
 Podczas implementacji wyszło, że mój wzór jest słaby i powoduje wyparowanie feromonu poprzez utratę go na krawędziach, więc zdecydowałem się 
-zaimplementować metodę opartą o laplasjan.
+zaimplementować inną dyskretyzację równania z artykułu [[2]](#2).
 
 $$
 F(\mathbf{x}, t+1) = F(\mathbf{x}, t) + \lambda \left( \sum_{\mathbf{y}\in \mathcal{M}(\mathbf{x})} F(\mathbf{y}, t) - k(x)F(\mathbf{x}, t)\right)
