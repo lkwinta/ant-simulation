@@ -175,7 +175,7 @@ def plot_box(center, radius_x, radius_y, **kwargs):
 
 if __name__ == "__main__":
     W, H = 300, 200  # 3:1
-    r = 1.4
+    r = 1.0
     masks = build_double_diamond_mask(W, H, r=r)
     wall_mask = masks["wall_mask"]
 
