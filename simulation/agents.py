@@ -80,7 +80,7 @@ class FeromoneAntAgent(AntAgent):
 
             for i, move in enumerate(possible_moves):
                 if move in self.recent_positions:
-                    weights[i] *= 0.1
+                    weights[i] *= 0.01
 
             if sum(weights) == 0:
                 weights = [1] * len(possible_moves)
@@ -100,6 +100,7 @@ class FeromoneAntAgent(AntAgent):
 
             if any(isinstance(a, NestAgent) for a in self.cell.agents):
                 self.searching = True
+                self.recent_positions.clear()
 
     def deposit_feromone(self):
         if not self.searching:
@@ -108,7 +109,7 @@ class FeromoneAntAgent(AntAgent):
             )
             x, y = self.cell.coordinate
             self.feromone[x, y] += self.model.A * np.exp(
-                -np.pow(food_dist, 2) / np.pow(self.model.sigma, 2)
+                -np.pow(food_dist, 1) / np.pow(self.model.sigma, 1)
             )
             self.feromone[x, y] = min(self.feromone[x, y], self.model.max_feromone)
 

@@ -81,11 +81,17 @@ class AntsModel(Model):
             (mask["params"]["right_room"][1] + mask["params"]["right_room"][3]) // 2,
         )
 
+        # spawn several food sources in one spot to make it more likely for ants to find them
         self.food_source = FoodSourceAgent(
             self,
             self.grid[right_room_center[0], right_room_center[1]],
             food_amount=1000,
         )
+
+        for cell in self.food_source.cell.neighborhood.cells:
+            pos = cell.position
+            FoodSourceAgent(self, self.grid[pos[0], pos[1]], food_amount=1000)
+
         self.nest = NestAgent(self, self.grid[left_room_center[0], left_room_center[1]])
         self.nest_distance = self._build_distance_field(self.nest.pos)
 
@@ -266,15 +272,22 @@ class AntsModel(Model):
     @staticmethod
     def _diffusion(F, lam, wall_mask):
         W, H = F.shape
-        free = ~wall_mask
 
         F0 = F.copy()
         F0[wall_mask] = 0.0
 
         nbr_sum = np.zeros_like(F0, dtype=float)
-        nbr_cnt = np.zeros_like(F0, dtype=float)
 
-        shifts = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+        shifts = [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ]
         for dx, dy in shifts:
             src_x0 = max(0, -dx)
             src_x1 = min(W, W - dx)
@@ -288,14 +301,9 @@ class AntsModel(Model):
             src = (slice(src_x0, src_x1), slice(src_y0, src_y1))
             dst = (slice(dst_x0, dst_x1), slice(dst_y0, dst_y1))
 
-            allowed = free[dst] & free[src]
-            nbr_sum[dst] += F0[src] * allowed
-            nbr_cnt[dst] += allowed.astype(float)
+            nbr_sum[dst] += F0[src]
 
-        # Laplacian on the neighbor graph:
-        F_new = F0 + lam * (nbr_sum - nbr_cnt * F0)
-
+        F_new = (1.0 - lam) * F0 + (lam / len(shifts)) * nbr_sum
         F_new[wall_mask] = 0.0
-        # (opcjonalnie) brak wartości ujemnych
         F_new[F_new < 0] = 0.0
         return F_new
