@@ -104,9 +104,9 @@ class FeromoneAntAgent(AntAgent):
 
     def deposit_feromone(self):
         if not self.searching:
-            food_dist = np.linalg.norm(
+            food_dist = np.max(np.abs(
                 np.array(self.food_position) - np.array(self.cell.coordinate)
-            )
+            ))
             x, y = self.cell.coordinate
             self.feromone[x, y] += self.model.A * np.exp(
                 -np.pow(food_dist, 1) / np.pow(self.model.sigma, 1)

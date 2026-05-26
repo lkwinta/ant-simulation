@@ -13,6 +13,8 @@ from itertools import product
 import multiprocessing as mp
 # from copy import deepcopy
 
+def init_child(lock):
+    tqdm.set_lock(lock)
 
 def save_heatmap(heat, path="heatmap.png", title="Ant position heatmap", clip=None):
     plt.figure(figsize=(10, 6))
@@ -37,7 +39,14 @@ def run(scenario: AntsScenario, steps: int = 3000, heat_every: int = 10):
     states = []
     feromones = []
 
-    for t in range(steps):
+    worker_id = mp.current_process()._identity[0]
+    pos = worker_id 
+
+    for t in tqdm(range(steps), 
+                  position=pos, 
+                  leave=False, 
+                  dynamic_ncols=True,
+                  mininterval=0.5):
         model.step()
 
         if (t % heat_every) == 0:
@@ -108,20 +117,26 @@ def run_wrap(params):
 
 
 if __name__ == "__main__":
-    A = [7, 7.5, 8]
-    sigma = [50, 52, 55]
-    diffusion_rate = [0.04, 0.042, 0.045]
+    A = [6]
+    # sigma = [48, 48.25, 48.5]
+    sigma = [48]
+    diffusion_rate = [0.023, 0.024]
 
     params = list(product(A, sigma, diffusion_rate))
 
+    lock = mp.RLock() 
+
     os.makedirs("simulations", exist_ok=True)
 
-    with mp.Pool(processes=mp.cpu_count()) as pool:
+    with mp.Pool(processes=min(mp.cpu_count(), len(params)), initializer=init_child, initargs=(lock, )) as pool:
         for (walls, feromones, positions, states), param in tqdm(
             pool.imap_unordered(
                 run_wrap,
                 params,
-            )
+            ),
+            position=0,
+            dynamic_ncols=True,
+            total=len(params),
         ):
             sim_name = f"simulations/sim_A{param[0]}_sigma{param[1]}_diff{param[2]}"
             draw_simulation(walls, feromones, positions, states, sim_name=sim_name)
