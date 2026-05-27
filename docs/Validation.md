@@ -1,9 +1,19 @@
-# Scenariusz kalibracyjny
-
-
 # Scenrariusze testowe
 
-Trasy jak Fig.1 z 
+Trasy jak z artykułów [1](#1) i [2](#2) zostały wygenerowane przy pomocy narzędzi z parametrycznym współzynnikiem `r`. 
+Wartość `r = 1.0` oznacza, że obie trasy są identyczne. Współczynnik `r = 1.4` oznacza, że trasa dłuższa jest 1.4 razy 
+dłuższa od trasy krótszej. Przykładowe trasy:
+
+<table>
+    <tr>
+        <td><img src="imgs/single.png" alt="single" width="400"/></td>
+        <td><img src="imgs/double_r1.png" alt="double" width="400"/></td>
+    <tr>
+    </tr>
+        <td><img src="imgs/double_r1_4.png" alt="triple" width="400"/></td>
+        <td><img src="imgs/double_r2.png" alt="triple" width="400"/></td>
+    </tr>
+</table>
 
 
 # Bibliografia
